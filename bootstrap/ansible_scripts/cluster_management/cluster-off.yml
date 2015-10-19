@@ -1,0 +1,138 @@
+---
+- hosts: all
+  become: no
+  tasks:
+    - name: verify access
+      command: hostname
+      tags:
+       - cluster-off
+       - preflight
+
+- hosts: groups['headnodes'][0]
+  become: yes
+  serial: 1
+  tasks:
+    - name: set Ceph no-out to avoid any rebalancing
+      command: ceph osd set noout
+      tags:
+        - cluster-off
+        - noout
+
+- hosts: worknodes
+  serial: 3
+  tasks:
+    # we do this async (don't wait) here and then wait in the next action
+    - name: shut down the host cleanly
+      command: shutdown -h now
+      become: yes
+      async: 0
+      poll: 0
+      ignore_errors: true
+      tags:
+        - cluster-off
+
+    - name: wait for all other work nodes to get fully off
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=stopped timeout=1800
+      tags:
+        - cluster-off
+        - checks
+        - check-off
+
+- hosts: headnodes
+  tasks:
+    # not sure about this one
+    - name: shut off the VIP
+      command: service keepalived stop
+      become: yes
+      tags:
+        - cluster-off
+
+    - name: wait for the VIP to disappear
+      local_action: wait_for host={{ cluster_vip }} port=80 state=stopped timeout=1800
+      tags:
+        - cluster-off
+        - checks
+        - check-off
+
+- hosts: groups['headnodes'][1:]
+  serial: 1
+  tasks:
+    - name: shut down other head nodes
+      command: shutdown -h now
+      become: yes
+      async: 0
+      poll: 0
+      ignore_errors: true
+      tags:
+        - cluster-off
+
+# optimism first. Dump everything into one file
+# This avoids specifying tables and perhaps missing something
+- hosts: groups['headnodes'][0]
+  tasks:
+    - name: dump all MySQL databases together
+      shell: mysqldump -p{{ mysql_pass }} -uroot --all-databases | gzip > all-dump.sql.gz
+      tags:
+        - cluster-off
+        - sql
+
+# paranoia second.
+# individual dumps of important stuff
+- hosts: groups['headnodes'][0]
+  gather_facts: no
+  tasks:
+    - name: dump individual MySQL databases
+      shell: mysqldump -p{{ mysql_pass }} -uroot {{ item }} | gzip > {{item}}-dump.sql.gz
+      ignore_errors: yes
+      with_items:
+        - cinder
+        - glance
+#        - graphite
+        - heat
+        - horizon
+#        - information_schema
+        - keystone
+        - mysql
+        - nova
+        - pdns
+#        - performance_schema
+#        - phpmyadmin
+#        - zabbix
+      tags:
+        - cluster-off
+        - sql
+
+    - name: shut down MySQL
+      service: name=mysql state=stopped
+      tags:
+        - cluster-off
+        - sql
+
+    - name: disable MySQL service
+      service: name=mysql enabled=no
+      tags:
+        - cluster-off
+        - sql
+
+    - name: shut down final head node
+      become: yes
+      command: shutdown -h now
+      async: 0
+      poll: 0
+      tags:
+        - cluster-off
+
+    - name: wait for the final head node to get fully off
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=stopped timeout=1800
+      tags:
+        - cluster-off
+        - checks
+        - check-off
+
+    - pause: seconds=300
+      tags:
+        - cluster-off
+
+    - debug: "Cluster is off"
+      tags:
+        - cluster-off

@@ -1,0 +1,7 @@
+---
+- name: Power on the node
+  local_action: /usr/bin/VBoxManage startvm {{ target }}
+  sudo: no
+  ignore_errors: true
+  tags:
+    - cluster-on

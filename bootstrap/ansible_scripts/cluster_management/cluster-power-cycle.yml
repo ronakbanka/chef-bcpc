@@ -1,0 +1,140 @@
+---
+
+- hosts: headnodes
+  sudo: yes
+  vars:
+  tasks:
+
+    - name: mysql service
+      sudo: yes
+      command: /etc/init.d/mysql status | grep Percona
+      register: mysql_status
+      tags: 
+        - checks
+
+    - debug: var=mysql_status.stdout
+      tags:
+        - checks
+
+    - name: check mysql sync state
+      sudo: yes
+      shell: /usr/bin/clustercheck check {{ mysql_check_pass }} 0 | grep 'is synced'
+      register: result
+      until: result.rc == 0
+      retries: 5
+      delay: 10
+      tags:
+        - checks
+
+- hosts: single-head
+  sudo: yes
+  serial: 1
+  vars:
+  tasks:
+    - name: set Ceph no-out to avoid any rebalancing
+      sudo: yes
+      command: ceph osd set noout
+
+- hosts: headnodes
+  sudo: yes
+  serial: 1
+  vars:
+  tasks:
+
+
+    - name: restart the host cleanly
+      sudo: yes
+      command: shutdown -r now
+      async: 0
+      poll: 0
+      ignore_errors: true
+
+    - name: Wait for ssh to come up again....
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=started timeout=1800
+
+    - name: ensure sql is running
+      sudo: yes
+      service: name=mysql state=running pattern='up and running'
+
+    - name: check mysql
+      sudo: yes
+      shell: /usr/bin/clustercheck check {{ mysql_check_pass }} 0 | grep 'is synced'
+      register: result
+      until: result.rc == 0
+      retries: 5
+      delay: 60
+      tags:
+        - checks
+
+    - name: set the time
+      sudo: yes
+      command: ntpdate -u {{ ntp_server }}
+      tags: ntp
+
+    - name: set the time again
+      sudo: yes
+      command: ntpdate -u {{ ntp_server }}
+      tags: ntp
+
+    - name: restart the mon
+      sudo: yes
+      command: service ceph-mon-all restart
+
+
+- hosts: worknodes
+  sudo: yes
+  serial: 1
+  vars:
+  tasks:
+    - name: restart the host cleanly
+      sudo: yes
+      command: shutdown -r now
+      async: 0
+      poll: 0
+      ignore_errors: true
+
+    - name: Wait for ssh to come up again....
+      local_action: wait_for host={{ ansible_ssh_host }} port=22 state=started timeout=1800
+
+    - name: set the time
+      sudo: yes
+      command: ntpdate -u {{ ntp_server }}
+      tags: ntp
+
+    - name: set the time again
+      sudo: yes
+      command: ntpdate -u {{ ntp_server }}
+      tags: ntp
+
+
+- hosts: single-head
+  sudo: yes
+  serial: 1
+  vars:
+  tasks:
+    - name: unset Ceph no-out to allow Ceph to rebalance from now on
+      sudo: yes
+      command: ceph osd unset noout
+
+- hosts: headnodes
+  sudo: yes
+  vars:
+  tasks:
+
+    - name: mysql service
+      sudo: yes
+      command: /etc/init.d/mysql status | grep Percona
+      register: mysql_status
+      tags: 
+        - checks
+
+    - debug: var=mysql_status.stdout
+      tags:
+        - checks
+
+    - name: check mysql sync state
+      sudo: yes
+      shell: /usr/bin/clustercheck check {{ mysql_check_pass }} 0 | grep 'is synced'
+      tags:
+        - checks
+
