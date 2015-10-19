@@ -1,0 +1,41 @@
+---
+- include: ../common_playbooks/validate_environment.yml
+
+- hosts: "{{ target }}"
+  become: yes
+  gather_facts: no
+
+  serial: 1
+  tasks:
+    - name: Get node FQDN
+      command: hostname -f
+      register: hostfqdn
+
+    - name: Register variable for head node
+      set_fact:
+        chef_role: BCPC-Headnode
+      when: "'headnodes' in group_names"
+
+    - name: Register variable for work node
+      set_fact:
+        chef_role: BCPC-Worknode
+      when: "'worknodes' in group_names"
+
+    - name: Register variable for ephemeral work node
+      set_fact:
+        chef_role: BCPC-EphemeralWorknode
+      when: "'ephemeral-worknodes' in group_names"
+
+    - name: Set node roles
+      command: knife node run_list set {{ hostfqdn.stdout }} 'role[BCPC-Hardware-{{ hardware_type }}]','role[{{ chef_role }}]'
+      delegate_to: "{{ groups['bootstraps'][0] }}"
+
+    - name: Give head node admin access to Chef server (write out actor map)
+      command: /opt/opscode/embedded/bin/knife actor map
+      delegate_to: "{{ groups['bootstraps'][0] }}"
+      when: "'headnodes' in group_names"
+
+    - name: Give head node admin access to Chef server (set node as admin)
+      command: /opt/opscode/embedded/bin/knife group add actor admins {{ hostfqdn.stdout }}
+      delegate_to: "{{ groups['bootstraps'][0] }}"
+      when: "'headnodes' in group_names"

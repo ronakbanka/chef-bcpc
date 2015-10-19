@@ -5,6 +5,14 @@
 *.iml
 id_rsa
 secret_file
+cluster.txt
+cluster.yml
+cluster.yaml
+bootstrap/ansible_scripts/inventory*
+!bootstrap/ansible_scripts/inventory.template
+!bootstrap/ansible_scripts/inventory-vagrant
+bootstrap/ansible_scripts/group_vars
+!bootstrap/ansible_scripts/group_vars/*.template
 bootstrap/config/bootstrap_config.sh
 bootstrap/config/bootstrap_config.sh.overrides
 cacerts/

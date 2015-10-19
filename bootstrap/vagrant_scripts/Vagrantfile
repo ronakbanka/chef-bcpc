@@ -282,25 +282,32 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
         vb.customize ["modifyvm", :id, "--uartmode2", "disconnected"]
 
-        unless idx == 0
-          # this is an unpleasing hack to locate the VM on disk, so that additional disks can be stored with it
-          # this assumes that all VMs will be going into the default VirtualBox folder
-          begin
-            default_vm_config_file = %x[VBoxManage list systemproperties | grep 'Default machine folder']
-            default_vm_loc = default_vm_config_file.match(/^Default machine folder:\s+(.+)$/)[1]
-            vm_dir = File.join(default_vm_loc, vm)
-          rescue
-            fail "Unable to locate VM #{vm} on disk, terminating"
-          end
+        # this is an unpleasing hack to locate the VM on disk, so that additional disks can be stored with it
+        # this assumes that all VMs will be going into the default VirtualBox folder
+        begin
+          default_vm_config_file = %x[VBoxManage list systemproperties | grep 'Default machine folder']
+          default_vm_loc = default_vm_config_file.match(/^Default machine folder:\s+(.+)$/)[1]
+          vm_dir = File.join(default_vm_loc, vm)
+        rescue
+          fail "Unable to locate VM #{vm} on disk, terminating"
+        end
 
-          ('b'..'e').each_with_index do |disk, disk_idx|
-            disk_file = File.join(vm_dir, "#{vm}-#{disk}.vdi")
-            unless File.exist?(disk_file)
-              vb.customize ["createhd", "--filename", disk_file, "--size", disk_size]
-              vb.customize ["storageattach", :id, "--storagectl", "SATAController", "--device", "0", "--port", "#{disk_idx+1}", "--type", "hdd", "--medium", disk_file]
-            end # File.exist
-          end # b..e each
-        end # if (1..3).include? idx
+        if idx.zero?
+          # on the bootstrap node these disks are not used by pure Vagrant, but will be used by Ansible scripts
+          # sdb is /mnt and sdc is /bcpc
+          disks = {'b' => 20480, 'c' => 204800}
+        else
+          disks = Hash[('b'..'e').collect {|x| [x, 20480]}]
+        end
+
+        disks.each_with_index do |disk, disk_idx|
+          disk_file = File.join(vm_dir, "#{vm}-#{disk[0]}.vdi")
+          unless File.exist?(disk_file)
+            vb.customize ["createhd", "--filename", disk_file, "--size", disk[1]]
+            vb.customize ["storageattach", :id, "--storagectl", "SATAController", "--device", "0", "--port", "#{disk_idx+1}", "--type", "hdd", "--medium", disk_file]
+          end # File.exist
+        end # disks.each
+
       end # machine.vm.provider :virtualbox do |vb|
     end # config.vm.define vm do |machine|
   end # $vms_to_build.each_with_index

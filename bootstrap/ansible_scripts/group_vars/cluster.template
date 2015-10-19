@@ -1,0 +1,52 @@
+---
+cluster_name: Test-Laptop-Vagrant
+
+# this must match whatever hostname -f will produce on the bootstrap node
+# or there will be sadness when you try to enroll clients against the Chef server
+chef_url: 10.0.100.3
+
+# version of chef-bcpc to deploy
+chef_bcpc_version: master
+
+# this is a magic variable that if defined will attempt to deploy chef-bcpc
+# from the specified directory instead of a ZIP file named
+# chef-bcpc-{{ chef_bcpc_version }}.zip
+# (use this when iterating locally and not from a particular release)
+#chef_bcpc_deploy_from_dir: /deploy/chef-bcpc/from/here/
+
+# chef_bcpc_prop is a special cookbook that overlays onto chef_bcpc
+# leave commented out if not in use, will be skipped if not defined
+#chef_bcpc_prop_version: master
+
+# internal_cookbooks is for deploying additional cookbooks that are not
+# overlays or dependencies and can be found in git-staging
+internal_cookbooks: []
+
+# these cookbooks are obtained by looking for a .tar.gz in
+# bootstrap-files/cookbooks with the appropriate name and version
+dependency_cookbooks:
+- cookbook: apt
+  version: 1.10.0
+- cookbook: concat
+  version: 0.3.0
+- cookbook: cron
+  version: 1.6.1
+- cookbook: hostsfile
+  version: 2.4.5
+- cookbook: logrotate
+  version: 1.6.0
+- cookbook: ntp
+  version: 1.8.6
+- cookbook: ubuntu
+  version: 1.1.8
+- cookbook: yum
+  version: 3.2.2
+
+cluster_apt_mirror: 10.0.100.3
+cluster_vip: 10.0.100.5
+
+# public key for operations user
+operations_key: "ssh-rsa blah"
+
+# private key for operations user
+ansible_ssh_private_key_file: /put/privkey/here

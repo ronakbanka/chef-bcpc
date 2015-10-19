@@ -1,0 +1,59 @@
+# variables used in cluster deployment (move to per-cluster group_vars as needed)
+---
+
+# git-staging used for staging Git ZIP archives before transferring to bootstrap node
+controlnode_git_staging_dir: /set/to/a/real/path
+
+# files directory for miscellaneous packages/files used to stand up bootstrap node
+# (this is the same as the BOOTSTRAP_CACHE_DIR from the Vagrant build process, so
+# just copy the contents of that directory in here into a subdirectory with the
+# version of BCPC you are deploying)
+controlnode_files_dir: /set/to/a/real/path
+
+# local mirror of apt repos to distribute to bootstrap node
+# (this is passed to rsync with an / appended to the end)
+controlnode_apt_mirror_dir: /set/to/a/real/path
+
+# where data goes on the bootstrap node
+bootstrap_staging_dir: /bcpc
+bootstrap_files_dir: "{{ bootstrap_staging_dir }}/bootstrap-files"
+bootstrap_git_staging_dir: "{{ bootstrap_staging_dir }}/git-staging"
+bootstrap_apt_mirror_dir: "{{ bootstrap_staging_dir }}/apt-mirror"
+bootstrap_deployed_dir: "{{ bootstrap_staging_dir }}/deployed"
+bootstrap_mirror_root_dir: "{{ bootstrap_staging_dir }}/mirror-root"
+
+# set this variable here for all clusters or in group_vars for an
+# individual cluster to seek out prebuilt binaries instead of building
+# on the bootstrap node
+use_prebuilt_binaries: false
+
+# Chef package names
+chef_server_deb: chef-server-core_12.0.8-1_amd64.deb
+chef_client_deb: chef_12.3.0-1_amd64.deb
+
+# IPMI username and password
+ipmi_username: username
+ipmi_password: password
+
+# lists of users to add or remove from the bootstrap node
+allowed_users:
+- username: xxx
+  public_key: yyy
+
+revoked_users:
+- username: xxx
+
+# default dictionary to map mirror paths (override per cluster as needed)
+mirror_path_map:
+  ceph: download.ceph.com/debian-hammer
+  elasticsearch: packages.elasticsearch.org/elasticsearch/1.5/debian
+  erlang: packages.erlang-solutions.com/ubuntu/
+  fluentd: packages.treasuredata.com/2/ubuntu/trusty
+  haproxy: ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu
+  hwraid: hwraid.le-vert.net/ubuntu
+  kibana: packages.elasticsearch.org/kibana/4.1/debian
+  mysql: repo.percona.com/apt
+  openstack: ubuntu-cloud.archive.canonical.com/ubuntu
+  rabbitmq: www.rabbitmq.com/debian
+  ubuntu: mirror.pnl.gov/ubuntu
+  zabbix: repo.zabbix.com/zabbix/2.4/ubuntu

@@ -1,0 +1,39 @@
+[localhost]
+127.0.0.1 ansible_connection=local
+
+[TLVM:vars]
+ansible_ssh_user=operations
+hardware_type=Virtual
+
+[TLVM:children]
+TLVM-bootstraps
+TLVM-cluster
+
+[TLVM-cluster:children]
+TLVM-headnodes
+TLVM-worknodes
+TLVM-ephemeral-worknodes
+
+[TLVM-worknodes]
+bcpc-vm2  ansible_ssh_host=10.0.100.12
+
+[TLVM-ephemeral-worknodes]
+bcpc-vm3  ansible_ssh_host=10.0.100.13
+
+[TLVM-headnodes]
+bcpc-vm1  ansible_ssh_host=10.0.100.11
+
+[TLVM-bootstraps]
+bcpc-bootstrap  ansible_ssh_host=10.0.100.3
+
+[bootstraps:children]
+TLVM-bootstraps
+
+[headnodes:children]
+TLVM-headnodes
+
+[worknodes:children]
+TLVM-worknodes
+
+[ephemeral-worknodes:children]
+TLVM-ephemeral-worknodes

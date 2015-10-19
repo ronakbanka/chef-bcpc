@@ -1,0 +1,20 @@
+# this playbook calls a script that reads cluster.txt
+---
+# first validate local environment aspects
+- include: ../common_playbooks/validate_environment.yml
+
+- hosts: bootstraps
+  gather_facts: no
+  remote_user: operations
+  become: yes
+  tags:
+    - cobbler
+  tasks:
+    - name: register the cluster head nodes in cluster.txt
+      command: ./cluster-enroll-cobbler.sh add head chdir={{ bootstrap_deployed_dir }}
+
+    - name: register the cluster work nodes in cluster.txt
+      command: ./cluster-enroll-cobbler.sh add work chdir={{ bootstrap_deployed_dir }}
+
+    - name: register the cluster work-ephemeral nodes in cluster.txt
+      command: ./cluster-enroll-cobbler.sh add work-ephemeral chdir={{ bootstrap_deployed_dir }}

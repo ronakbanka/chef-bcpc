@@ -1,6 +1,5 @@
 Overview
 ========
-
 This is a set of [Chef](https://github.com/opscode/chef) cookbooks to bring up
 an instance of an [OpenStack](http://www.openstack.org/)-based cluster of head
 and worker nodes.  In addition to hosting virtual machines, there are a number
@@ -23,12 +22,11 @@ Setup
 =====
 To get going in a hurry, we recommend the Vagrant mechanism for building your cluster. Please read the [Vagrant Bootstrap Guide](https://github.com/bloomberg/chef-bcpc/blob/master/docs/building_with_vagrant.md) for information on getting BCPC set up locally with Vagrant.
 
-If you are interested in building your cluster the hard way without Vagrant, this process and the documentation are in flux at the moment, but will be improved shortly.
+If you are interested in building your cluster the hard way without Vagrant, there are Ansible scripts in `bootstrap/ansible_scripts` for creating a hardware cluster that can be applied to a virtualized cluster (manual work will be required). The Ansible scripts are documented at [Using Ansible](https://github.com/bloomberg/chef-bcpc/blob/master/docs/using_ansible.md).
 
 BCPC Services
 -------------
-
-BCPC currently relies upon a number of open-source packages:
+BCPC is built using the following open-source software:
 
  - [Apache HTTP Server](http://httpd.apache.org/)
  - [Ceph](http://ceph.com/)
@@ -48,8 +46,8 @@ BCPC currently relies upon a number of open-source packages:
  - [PowerDNS](https://www.powerdns.com/)
  - [RabbitMQ](http://www.rabbitmq.com/)
  - [Ubuntu](http://www.ubuntu.com/)
- - [Vagrant](http://www.vagrantup.com/) - Verified with version 1.7.2 and 1.7.3
- - [VirtualBox](https://www.virtualbox.org/) - >= 4.3.x and 5.0 supported
+ - [Vagrant](http://www.vagrantup.com/) - 1.7.4 or better recommended
+ - [VirtualBox](https://www.virtualbox.org/) - 5.0.0 or better recommended
  - [Zabbix](http://www.zabbix.com/)
 
 Thanks to all of these communities for producing this software!

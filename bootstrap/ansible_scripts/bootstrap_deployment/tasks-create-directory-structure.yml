@@ -1,0 +1,24 @@
+---
+  #
+  # initialize dir structure on /bcpc
+  #
+
+  - name: Set up /mnt directory
+    filesystem: fstype=ext4 dev=/dev/sdb opts="-F"
+
+  - name: Mount the /mnt directory
+    mount: name=/mnt src=/dev/sdb fstype=ext4 state=mounted
+
+  - name: Set up /bcpc directory
+    filesystem: fstype=ext4 dev=/dev/sdc opts="-F"
+
+  - name: Mount the /bcpc directory
+    mount: name=/bcpc src=/dev/sdc fstype=ext4 state=mounted
+
+  - name: Create various staging areas
+    file: path={{ item }} state=directory owner=operations group=operators mode=0775
+    with_items:
+      - "{{ bootstrap_files_dir }}"
+      - "{{ bootstrap_git_staging_dir }}"
+      - "{{ bootstrap_apt_mirror_dir }}"
+      - "{{ bootstrap_deployed_dir }}"

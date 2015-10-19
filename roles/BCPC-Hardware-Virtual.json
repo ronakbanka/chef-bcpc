@@ -1,0 +1,10 @@
+{
+    "name": "BCPC-Hardware-Virtual",
+    "json_class": "Chef::Role",
+    "run_list": [],
+    "description": "Role for virtualized hardware.",
+    "chef_type": "role"
+}
+
+
+

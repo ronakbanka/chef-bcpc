@@ -1,0 +1,26 @@
+---
+- name: Ensure ubuntu user is absent
+  user: name=ubuntu state=absent remove=yes
+
+- name: Set up allowed users
+  user: name={{ item.username }} shell=/bin/bash createhome=yes groups=operators
+  with_items: allowed_users
+  when: allowed_users is defined
+
+- name: Add SSH keys for allowed users
+  authorized_key: user={{ item.username }} key="{{ item.public_key }}"
+  with_items: allowed_users
+  when: allowed_users is defined
+
+- name: Remove revoked users
+  user: name={{ item.username }} state=absent remove=yes
+  with_items: revoked_users
+  when: revoked_users is defined
+
+- name: Set up operations environment
+  template: src=templates/bashrc.operators.j2 dest=/home/{{ item.username }}/.bashrc owner={{ item.username }} group={{ item.username }} mode=0770
+  with_items: allowed_users
+  when: allowed_users is defined
+
+- name: Install scary motd banner
+  template: src=templates/mod.tail.operations.j2 dest=/etc/motd.tail owner=root group=root mode=664
