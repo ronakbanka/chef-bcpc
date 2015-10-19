@@ -13,6 +13,7 @@ TLVM-cluster
 TLVM-headnodes
 TLVM-worknodes
 TLVM-ephemeral-worknodes
+TLVM-monitoringnodes
 
 [TLVM-worknodes]
 bcpc-vm2  ansible_ssh_host=10.0.100.12
@@ -22,6 +23,11 @@ bcpc-vm3  ansible_ssh_host=10.0.100.13
 
 [TLVM-headnodes]
 bcpc-vm1  ansible_ssh_host=10.0.100.11
+
+[TLVM-monitoringnodes]
+bcpc-vm4  ansible_ssh_host=10.0.100.14
+bcpc-vm5  ansible_ssh_host=10.0.100.15
+bcpc-vm6  ansible_ssh_host=10.0.100.16
 
 [TLVM-bootstraps]
 bcpc-bootstrap  ansible_ssh_host=10.0.100.3
@@ -37,3 +43,6 @@ TLVM-worknodes
 
 [ephemeral-worknodes:children]
 TLVM-ephemeral-worknodes
+
+[monitoringnodes:children]
+TLVM-monitoringnodes

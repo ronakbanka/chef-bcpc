@@ -29,14 +29,20 @@ def generate_random_cluster_list(
     by joining the lists with whitespace separators.
     """
     possible_roles = [
-        'bootstrap', 'head', 'work', 'work-ephemeral', 'reserved']
+        'bootstrap',
+        'head',
+        'work',
+        'work-ephemeral',
+        'monitoring',
+        'reserved']
 
     cluster_list = []
 
     rack_number = random.randint(1, 12)
     node_number = 1
 
-    head_node_count = 0
+    head_node_count = 0  # maximum of 5
+    monitoring_node_count = 0  # maximum of 3
 
     for n in range(nodes):
         node_name = "%s-r%02dn%02d" % (node_prefix, rack_number, node_number)
@@ -56,6 +62,11 @@ def generate_random_cluster_list(
         if head_node_count >= 5:
             if 'head' in possible_roles:
                 possible_roles.remove('head')
+        if role == 'monitoring':
+            monitoring_node_count += 1
+        if monitoring_node_count >= 3:
+            if 'monitoring' in possible_roles:
+                possible_roles.remove('monitoring')
 
         cluster_list.append([node_name,
                              mac_address,

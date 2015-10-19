@@ -28,6 +28,7 @@ hardware_type={{ cluster_hardware_type }}
 {{ cluster_name }}-headnodes
 {{ cluster_name }}-worknodes
 {{ cluster_name }}-ephemeral-worknodes
+{{ cluster_name }}-monitoringnodes
 
 [{{ cluster_name }}-worknodes]
 {% for item in worknodes|dictsort %}
@@ -56,6 +57,15 @@ hardware_type={{ cluster_hardware_type }}
 {% endif %}
 {% endfor %}
 
+[{{ cluster_name }}-monitoringnodes]
+{% for item in monitoringnodes|dictsort %}
+{% if cluster_hardware_type %}
+{{ item[0] }} ansible_ssh_host={{ item[1].ip_address }} ipmi_address={{ item[1].ipmi_address }}
+{% else %}
+{{ item[0] }} ansible_ssh_host={{ item[1].ip_address }} ipmi_address={{ item[1].ipmi_address }} hardware_type={{ item[1].hardware_type }}
+{% endif %}
+{% endfor %}
+
 [{{ cluster_name }}-bootstraps]
 {% for item in bootstraps|dictsort %}
 {% if cluster_hardware_type %}
@@ -69,6 +79,7 @@ hardware_type={{ cluster_hardware_type }}
 headnodes
 worknodes
 ephemeral-worknodes
+monitoringnodes
 
 [bootstraps:children]
 {{ cluster_name }}-bootstraps
@@ -81,6 +92,9 @@ ephemeral-worknodes
 
 [ephemeral-worknodes:children]
 {{ cluster_name }}-ephemeral-worknodes
+
+[monitoringnodes:children]
+{{ cluster_name }}-monitoringnodes
 """
 
 
@@ -98,6 +112,7 @@ def render_inventory(path, ssh_user):
     headnodes = {}
     worknodes = {}
     eworknodes = {}
+    monitoringnodes = {}
     cluster_hardware_type = None
 
     for node in cluster['nodes']:
@@ -110,6 +125,8 @@ def render_inventory(path, ssh_user):
             worknodes[node] = cluster['nodes'][node]
         elif cluster['nodes'][node]['role'] == 'work-ephemeral':
             eworknodes[node] = cluster['nodes'][node]
+        elif cluster['nodes'][node]['role'] == 'monitoring':
+            monitoringnodes[node] = cluster['nodes'][node]
 
     # if None is detected as a hardware_type, the person needs to update
     # the YAML to actually have real hardware types
@@ -128,7 +145,8 @@ def render_inventory(path, ssh_user):
         bootstraps=bootstraps,
         headnodes=headnodes,
         worknodes=worknodes,
-        eworknodes=eworknodes
+        eworknodes=eworknodes,
+        monitoringnodes=monitoringnodes
     )
 
 

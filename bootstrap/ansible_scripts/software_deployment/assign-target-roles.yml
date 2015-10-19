@@ -26,16 +26,22 @@
         chef_role: BCPC-EphemeralWorknode
       when: "'ephemeral-worknodes' in group_names"
 
+    - name: Register variable for monitoring node
+      set_fact:
+        chef_role: BCPC-Monitoring
+      when: "'monitornodes' in group_names"
+
     - name: Set node roles
       command: knife node run_list set {{ hostfqdn.stdout }} 'role[BCPC-Hardware-{{ hardware_type }}]','role[{{ chef_role }}]'
       delegate_to: "{{ groups['bootstraps'][0] }}"
 
-    - name: Give head node admin access to Chef server (write out actor map)
+    - name: Write out actor map if needed
       command: /opt/opscode/embedded/bin/knife actor map
       delegate_to: "{{ groups['bootstraps'][0] }}"
-      when: "'headnodes' in group_names"
+      when: "'headnodes' in group_names or 'monitornodes' in group_names"
 
-    - name: Give head node admin access to Chef server (set node as admin)
+    # TODO: only allow the first node in each group admin access to minimize exposure
+    - name: Give head/monitoring node admin access to Chef server to write to data bag
       command: /opt/opscode/embedded/bin/knife group add actor admins {{ hostfqdn.stdout }}
       delegate_to: "{{ groups['bootstraps'][0] }}"
-      when: "'headnodes' in group_names"
+      when: "'headnodes' in group_names or 'monitornodes' in group_names"
