@@ -1,0 +1,5 @@
+---
+# the VM should try to PXE boot every time, so I don't think a task is required
+# here in order to put it into network boot mode
+- name: Reboot VirtualBox VM
+  local_action: VBoxManage controlvm {{ inventory_hostname }} reset

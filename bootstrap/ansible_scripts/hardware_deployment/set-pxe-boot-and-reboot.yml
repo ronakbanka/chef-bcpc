@@ -21,10 +21,8 @@
       command: cobbler system edit --name={{ inventory_hostname }} --netboot-enabled=true
       delegate_to: "{{ groups['bootstraps'][0] }}"
 
-    - name: Set PXE boot mode on node via IPMI
-      command: ipmitool -H {{ ipmi_ip }} -I lanplus -U {{ ipmi_username }} -P {{ ipmi_password }} chassis bootdev pxe
-      delegate_to: "{{ groups['bootstraps'][0] }}"
+    - include: tasks-hardware-set-pxe-boot-and-reboot.yml
+      when: hardware_type != "Virtual"
 
-    - name: Issue chassis power reset command to node
-      command: ipmitool -H {{ ipmi_ip }} -I lanplus -U {{ ipmi_username }} -P {{ ipmi_password }} chassis power reset
-      delegate_to: "{{ groups['bootstraps'][0] }}"
+    - include: tasks-virtualized-set-pxe-boot-and-reboot.yml
+      when: hardware_type == "Virtual"
