@@ -38,23 +38,12 @@ if platform?("debian", "ubuntu")
     include_recipe "bcpc::networking"
 end
 
-cookbook_file "/usr/local/bin/apt-pkg-check-version" do
-    source "apt-pkg-check-version"
-    owner "root"
-    mode 00755
-end
-
-bash "check-ceph-version" do
-    code <<-EOH
-        /usr/local/bin/apt-pkg-check-version ceph #{node['bcpc']['ceph']['version_number']}
-        exit $?
-	EOH
-end
-
 %w{librados2 librbd1 libcephfs1 python-ceph ceph ceph-common ceph-fs-common ceph-mds ceph-fuse}.each do |pkg|
   package pkg do
+    # use Ceph repository instead of UCA
+    # UCA release looks like "trusty-proposed" or "trusty-updates"
+    default_release 'trusty'
     action :upgrade
-    version node['bcpc']['ceph']['version']
   end
 end
 

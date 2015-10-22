@@ -15,34 +15,39 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-
-
 
 # This recipe installs OS packages which are required by all node types.
 
+# run apt-get update at the start of every Chef run if so configured
+if node['bcpc']['enabled']['always_update_package_lists'] then
+  bash "run-apt-get-update" do
+    user "root"
+    code "DEBIAN_FRONTEND=noninteractive apt-get update"
+  end
+end
+
 package 'patch'
-package 'sshpass'  # GitHub #112 -- required for nodessh.sh 
+package 'sshpass'  # GitHub #112 -- required for nodessh.sh
 # logtail is used for some zabbix checks
 package 'logtail'
 
 # Remove spurious logging failures from this package
 package "powernap" do
-    action :remove
+  action :remove
 end
 
-if node['bcpc']['enabled']['apt_upgrade'] then
-    include_recipe "apt::default"
-    bash "perform-upgrade" do
-        user "root"
-        code "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade"
-    end
+if node['bcpc']['enabled']['apt_dist_upgrade']
+  include_recipe "apt::default"
+  bash "perform-dist-upgrade" do
+    user "root"
+    code "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" dist-upgrade"
+  end
 end
 
-# run apt-get update at the start of every Chef run if so configured
-if node['bcpc']['enabled']['always_update_package_lists'] then
-    bash "run-apt-get-update" do
-        user "root"
-        code "DEBIAN_FRONTEND=noninteractive apt-get update"
-    end
+if node['bcpc']['enabled']['apt_upgrade']
+  include_recipe "apt::default"
+  bash "perform-upgrade" do
+    user "root"
+    code "DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade"
+  end
 end

@@ -41,44 +41,8 @@ apt_repository "rabbitmq" do
     key "rabbitmq.key"
 end
 
-%w{
-   erlang-base
-   erlang-syntax-tools
-   erlang-mnesia
-   erlang-runtime-tools
-   erlang-crypto
-   erlang-asn1
-   erlang-public-key
-   erlang-ssl
-   erlang-inets
-   erlang-corba
-   erlang-diameter
-   erlang-xmerl
-   erlang-edoc
-   erlang-eldap
-   erlang-erl-docgen
-   erlang-eunit
-   erlang-ic
-   erlang-inviso
-   erlang-odbc
-   erlang-snmp
-   erlang-os-mon
-   erlang-parsetools
-   erlang-percept
-   erlang-ssh
-   erlang-webtool
-   erlang-tools
-   erlang-nox
-}.each do |erlang_package|
-  package erlang_package do
-    action :install
-    version node['bcpc']['erlang']['version']
-  end
-end
-
 package "rabbitmq-server" do
-    action :install
-    version node['bcpc']['rabbitmq']['version']
+    action :upgrade
     notifies :stop, "service[rabbitmq-server]", :immediately
 end
 

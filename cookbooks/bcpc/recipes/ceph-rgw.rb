@@ -25,8 +25,8 @@ include_recipe "bcpc::apache2"
 include_recipe "bcpc::ceph-work"
 
 package "radosgw" do
-    action :install
-    version node['bcpc']['ceph']['version']
+  default_release 'trusty'  # use Ceph repository instead of UCA
+  action :upgrade
 end
 
 package "python-boto"
@@ -122,7 +122,7 @@ end
 service "radosgw-all" do
   provider Chef::Provider::Service::Upstart
   action [ :enable, :start ]
-end 
+end
 
 ruby_block "initialize-radosgw-admin-user" do
     block do

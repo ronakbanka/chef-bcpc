@@ -36,19 +36,6 @@ default['bcpc']['s3_ssl_intermediate_certificate'] = nil
 
 ###########################################
 #
-# Package versions
-#
-###########################################
-default['bcpc']['elasticsearch']['version'] = '1.5.1'
-default['bcpc']['ceph']['version'] = '0.94.5-1trusty'
-default['bcpc']['ceph']['version_number'] = '0.94.5'
-default['bcpc']['erlang']['version'] = '1:17.5.3'
-default['bcpc']['haproxy']['version'] = '1.5.15-1ppa1~trusty'
-default['bcpc']['kibana']['version'] = '4.0.2'
-default['bcpc']['rabbitmq']['version'] = '3.5.7-1'
-
-###########################################
-#
 #  Flags to enable/disable BCPC cluster features
 #
 ###########################################
@@ -64,7 +51,9 @@ default['bcpc']['enabled']['dns'] = true
 default['bcpc']['enabled']['host_firewall'] = true
 # This will enable of encryption of the chef data bag
 default['bcpc']['enabled']['encrypt_data_bag'] = false
-# This will enable auto-upgrades on all nodes (not recommended for stability)
+# These will enable automatic dist-upgrade/upgrade at the start of a Chef run
+# (not recommended for stability)
+default['bcpc']['enabled']['apt_dist_upgrade'] = false
 default['bcpc']['enabled']['apt_upgrade'] = false
 # This will enable running apt-get update at the start of every Chef run
 default['bcpc']['enabled']['always_update_package_lists'] = true
@@ -324,7 +313,7 @@ default['bcpc']['keystone']['verbose'] = false
 # before failing (configures timeout on the wait-for-keystone-to-be-operational
 # spinlock guard).
 default['bcpc']['keystone']['wait_for_keystone_timeout'] = 120
-# Set the number of Keystone WSGI processes and threads to use by default on the 
+# Set the number of Keystone WSGI processes and threads to use by default on the
 # public API (experimentally threads > 1 may cause problems with the service
 # catalog, for now we recommend scaling only in the processes dimension)
 default['bcpc']['keystone']['wsgi']['processes'] = 5

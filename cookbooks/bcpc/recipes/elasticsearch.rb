@@ -28,11 +28,6 @@ if node['bcpc']['enabled']['logging'] then
         key 'elasticsearch.key'
     end
 
-    apt_preference 'elasticsearch' do
-        pin          "version #{node['bcpc']['elasticsearch']['version']}"
-        pin_priority '600'
-    end
-
     package "openjdk-7-jre-headless" do
         action :install
     end
