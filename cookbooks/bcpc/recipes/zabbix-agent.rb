@@ -44,7 +44,7 @@ if node['bcpc']['enabled']['monitoring'] then
         EOH
         only_if 'test -f /usr/local/sbin/zabbix_agentd'
     end
-  
+
     %w{zabbix-agent zabbix-get zabbix-sender}.each do |zabbix_package|
       package zabbix_package do
         action :upgrade
@@ -87,9 +87,6 @@ if node['bcpc']['enabled']['monitoring'] then
         owner node['bcpc']['zabbix']['user']
         group "root"
         mode 00600
-        variables(
-            :rgw_frontend => node['bcpc']['ceph']['frontend']
-        )
         only_if 'test -f /usr/bin/radosgw'
         notifies :restart, "service[zabbix-agent]", :immediately
     end

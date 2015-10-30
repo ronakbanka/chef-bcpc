@@ -3,11 +3,5 @@ UserParameter=ceph.rgw.bucket.size[*],HOME=/var/lib/zabbix radosgw-admin bucket 
 UserParameter=ceph.rgw.bucket.objects[*],HOME=/var/lib/zabbix radosgw-admin bucket stats --bucket='$1' | python -c "import json, sys; print json.load(sys.stdin)['usage']['rgw.main']['num_objects']"
 UserParameter=ceph.rgw.bucket.usage[*],HOME=/var/lib/zabbix  /usr/local/bin/zabbix_bucket_stats $1 $2 | egrep '^$3 ' | awk '{}{print $$2}'
 UserParameter=ceph.rgw.bucket.discovery,HOME=/var/lib/zabbix /usr/local/bin/zabbix_discover_buckets
-<% if @rgw_frontend.include? 'civetweb' %>
 UserParameter=ceph.rgw.haproxy[*],HOME=/var/lib/zabbix logtail -o /tmp/civetweb_rgw_haproxy -f /var/log/radosgw/radosgw.log | grep -B 1 '"GET / HTTP/1.0"' | grep http_status=200 | wc -l
 UserParameter=ceph.rgw.http500[*],HOME=/var/lib/zabbix logtail -o /tmp/civetweb_rgw_500 -f /var/log/radosgw/radosgw.log | egrep 'http_status=50[0-9]' | wc -l
-<% else %>
-UserParameter=ceph.rgw.haproxy[*],HOME=/var/lib/zabbix logtail -o /tmp/apache_rgw_haproxy -f   /var/log/apache2/rgw_access.log | grep '"GET / HTTP/1.0" 200 ' | wc -l
-UserParameter=ceph.rgw.http500[*],HOME=/var/lib/zabbix logtail -o /tmp/aache_rgw_500 -f /var/log/apache2/rgw_access.log | egrep 'HTTP\/1\.[0-9]" 500 ' | wc -l
-<% end %>
-

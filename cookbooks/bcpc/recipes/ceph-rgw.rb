@@ -93,36 +93,10 @@ end
     end
 end
 
-# Leaving apache portion in so that we can switch back if needed by removing 'rgw frontends...' statement
-# in ceph.conf and then restarting radosgw.
-file "/var/www/s3gw.fcgi" do
-    owner "root"
-    group "root"
-    mode 0755
-    content "#!/bin/sh\n exec /usr/bin/radosgw -c /etc/ceph/ceph.conf -n client.radosgw.gateway"
-    notifies :restart, "service[radosgw-all]", :immediately
-end
-
-template "/etc/apache2/sites-available/radosgw.conf" do
-    source "apache-radosgw.conf.erb"
-    owner "root"
-    group "root"
-    mode 00644
-    notifies :restart, "service[apache2]", :delayed
-end
-
-bash "apache-enable-radosgw" do
-    user "root"
-    code "a2ensite radosgw"
-    not_if "test -r /etc/apache2/sites-enabled/radosgw"
-    notifies :restart, "service[apache2]", :immediately
-end
-# End apache configs
-
 service "radosgw-all" do
   provider Chef::Provider::Service::Upstart
   action [ :enable, :start ]
-end 
+end
 
 ruby_block "initialize-radosgw-admin-user" do
     block do
