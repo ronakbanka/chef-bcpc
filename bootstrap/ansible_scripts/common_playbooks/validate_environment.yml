@@ -13,6 +13,27 @@
     fail: msg="Entered value {{ validate_cluster_name }} does not match group_vars cluster name {{ cluster_name }}"
     when: validate_cluster_name != cluster_name
 
+  - name: Get root of repository
+    local_action: command git rev-parse --show-toplevel
+    register: repo_root
+    become: no
+    run_once: true
+
+  - name: Set facts for file path locations
+    set_fact:
+      default_bootstrap_config: "{{ repo_root.stdout }}/bootstrap/config/bootstrap_config.sh.defaults"
+      override_bootstrap_config: "{{ repo_root.stdout }}/bootstrap/config/bootstrap_config.sh.overrides"
+      shared_prereqs_script: "{{ repo_root.stdout }}/bootstrap/shared/shared_prereqs.sh"
+    delegate_to: 127.0.0.1
+
+  - name: Download files to local file cache
+    local_action: shell source {{ default_bootstrap_config }} && if [ -f {{ override_bootstrap_config }} ]; then source {{ override_bootstrap_config }}; fi && {{ shared_prereqs_script }}
+    become: no
+    run_once: true
+    when: update_bcpc_local_cache
+    environment:
+      REPO_ROOT: "{{ repo_root.stdout }}"
+
   - name: check for presence of SSH key
     local_action: stat path={{ ansible_ssh_private_key_file }}
     register: ssh_stat
@@ -35,15 +56,14 @@
   - fail: msg="Directory {{ controlnode_git_staging_dir }} does not exist"
     when: not git_staging_dir_stat.stat.exists
 
-  - name: check for presence of local misc files directory for building binaries on bootstrap node (versioned)
+  - name: check for presence of local misc files directory
     local_action: stat path={{ controlnode_files_dir }}/{{ chef_bcpc_version }}
     register: files_build_resources_dir_stat
     become: no
     run_once: true
-    when: not use_prebuilt_binaries
 
   - fail: msg="Directory {{ controlnode_files_dir }}/{{ chef_bcpc_version }} does not exist"
-    when: not use_prebuilt_binaries and not files_build_resources_dir_stat.stat.exists
+    when: not files_build_resources_dir_stat.stat.exists
 
   - name: check for presence of local misc files directory with prebuilt binaries (versioned)
     local_action: stat path={{ controlnode_files_dir }}/{{ chef_bcpc_version }}-prebuilt

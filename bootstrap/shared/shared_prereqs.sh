@@ -15,6 +15,11 @@ download_file() {
   FILE=$1
   URL=$2
 
+  # remove failed file download
+  if [[ -f $BOOTSTRAP_CACHE_DIR/$FILE && ! -f $BOOTSTRAP_CACHE_DIR/${FILE}_downloaded ]]; then
+    rm -f $BOOTSTRAP_CACHE_DIR/$FILE
+  fi
+
   if [[ ! -f $BOOTSTRAP_CACHE_DIR/$FILE && ! -f $BOOTSTRAP_CACHE_DIR/${FILE}_downloaded ]]; then
     echo $FILE
     rm -f $BOOTSTRAP_CACHE_DIR/$FILE
@@ -26,6 +31,9 @@ download_file() {
 # This uses ROM-o-Matic to generate a custom PXE boot ROM.
 # (doesn't use the function because of the unique curl command)
 ROM=gpxe-1.0.1-80861004.rom
+if [[ -f $BOOTSTRAP_CACHE_DIR/$ROM && ! -f $BOOTSTRAP_CACHE_DIR/${ROM}_downloaded ]]; then
+  rm -f $BOOTSTRAP_CACHE_DIR/$ROM
+fi
 if [[ ! -f $BOOTSTRAP_CACHE_DIR/$ROM && ! -f $BOOTSTRAP_CACHE_DIR/${ROM}_downloaded ]]; then
   echo $ROM
   rm -f $BOOTSTRAP_CACHE_DIR/$ROM
@@ -35,6 +43,11 @@ fi
 
 # Obtain an Ubuntu netboot image to be used for PXE booting.
 download_file ubuntu-14.04-mini.iso http://archive.ubuntu.com/ubuntu/dists/trusty-updates/main/installer-amd64/current/images/netboot/mini.iso
+
+# Obtain the VirtualBox guest additions ISO for use with Ansible.
+VBOX_VERSION=5.0.10
+VBOX_ADDITIONS=VBoxGuestAdditions_$VBOX_VERSION.iso
+download_file $VBOX_ADDITIONS http://download.virtualbox.org/virtualbox/$VBOX_VERSION/$VBOX_ADDITIONS
 
 # Obtain a Vagrant Trusty box.
 BOX=trusty-server-cloudimg-amd64-vagrant-disk1.box

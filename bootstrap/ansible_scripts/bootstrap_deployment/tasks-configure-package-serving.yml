@@ -1,14 +1,98 @@
 ---
-  # leave / on the end of src path so rsync doesn't put the mirror dir inside the dest dir!
-  - name: Perform synchronization of local apt mirror (can take a long while)
-    synchronize: src={{ controlnode_apt_mirror_dir }}/ dest={{ bootstrap_apt_mirror_dir }}
-    tags:
-      - synchronize
-
   - name: Perform synchronization of local bootstrap files
     synchronize: src={{ controlnode_files_dir }}/ dest={{ bootstrap_files_dir }}/
     tags:
       - synchronize
+
+  # ensure shared folder is not mounted if user has toggled apt_mirror_via_vboxsf
+  - name: Ensure VirtualBox shared folder for apt mirror is not mounted
+    mount: name={{ bootstrap_apt_mirror_dir }} src=apt-mirror fstype=vboxsf state=absent
+    when: not apt_mirror_via_vboxsf and hardware_type == "Virtual"
+
+  # leave / on the end of src path so rsync doesn't put the mirror dir inside the dest dir!
+  - name: Perform synchronization of local apt mirror (can take a long while)
+    synchronize: src={{ controlnode_apt_mirror_dir }}/ dest={{ bootstrap_apt_mirror_dir }}
+    when: not apt_mirror_via_vboxsf
+    tags:
+      - synchronize
+
+  # VirtualBox shared folder mechanism is more involved (some might say tortured)
+  - name: Check for gcc
+    shell: which gcc
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual"
+    register: gcc_found
+
+  - name: Fail if gcc not installed
+    fail: msg="gcc must be installed in order to compile VirtualBox kernel extensions"
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and gcc_found.rc != 0
+
+  - name: Check for VirtualBox shared folder for apt mirror
+    local_action: shell VBoxManage showvminfo bcpc-bootstrap --machinereadable | egrep -q 'SharedFolderNameMachineMapping\d+="apt-mirror"'
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual"
+    register: apt_mirror_shared_folder_configured
+    ignore_errors: true
+
+  - name: Power down bootstrap VM to create shared folder
+    local_action: command VBoxManage controlvm bcpc-bootstrap acpipowerbutton
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Wait for bootstrap VM to power off
+    local_action: pause seconds=10
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Create VirtualBox shared folder for apt mirror directory
+    local_action: command VBoxManage sharedfolder add {{ inventory_hostname }} --name apt-mirror --hostpath {{ controlnode_apt_mirror_dir }} --readonly
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Power on bootstrap VM
+    local_action: command VBoxManage startvm bcpc-bootstrap
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Wait for bootstrap VM to become available via SSH
+    local_action: wait_for host={{ ansible_ssh_host }} port=22 delay=10 state=started
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Check for mount.vboxsf binary
+    stat: path=/sbin/mount.vboxsf
+    register: vboxsf_stat
+
+  - name: Mount VirtualBox guest additions ISO to /media (do not store in fstab)
+    command: mount -o loop {{ bootstrap_files_dir }}/{{ chef_bcpc_version }}/VBoxGuestAdditions_5.0.10.iso /media
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and not vboxsf_stat.stat.exists
+
+  - name: Install VirtualBox guest additions
+    command: /media/VBoxLinuxAdditions.run -- --force
+    register: vbox_guest_additions_install
+    failed_when: "'Building the shared folder support module ...done.' not in vbox_guest_additions_install.stderr"
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and not vboxsf_stat.stat.exists
+
+  - name: Unmount VirtualBox guest additions ISO
+    command: umount /media
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and not vboxsf_stat.stat.exists
+
+  - name: Reboot bootstrap VM after changing kernel modules
+    command: shutdown -r now
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Wait for bootstrap VM to become available via SSH
+    local_action: wait_for host={{ ansible_ssh_host }} port=22 delay=10 state=started
+    become: no
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and apt_mirror_shared_folder_configured.rc != 0
+
+  - name: Load vboxsf kernel module
+    command: modprobe vboxsf
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual" and not vboxsf_stat.stat.exists
+
+  - name: Mount VirtualBox apt mirror shared folder
+    mount: name={{ bootstrap_apt_mirror_dir }} src=apt-mirror fstype=vboxsf state=mounted
+    when: apt_mirror_via_vboxsf and hardware_type == "Virtual"
+    # VirtualBox shared folder done
 
   - name: Move default Ubuntu sources.list away
     command: mv /etc/apt/sources.list /etc/apt/sources.list.orig creates=/etc/apt/sources.list.orig

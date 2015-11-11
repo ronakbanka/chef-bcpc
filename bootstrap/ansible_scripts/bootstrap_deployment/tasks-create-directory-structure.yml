@@ -15,10 +15,26 @@
   - name: Mount the /bcpc directory
     mount: name=/bcpc src=/dev/sdc fstype=ext4 state=mounted
 
-  - name: Create various staging areas
+  - name: Create staging directories
     file: path={{ item }} state=directory owner=operations group=operators mode=0775
     with_items:
       - "{{ bootstrap_files_dir }}"
       - "{{ bootstrap_git_staging_dir }}"
-      - "{{ bootstrap_apt_mirror_dir }}"
       - "{{ bootstrap_deployed_dir }}"
+
+    # this and the below task are present because otherwise things will blow up when
+    # Ansible tries to modify a read-only filesystem
+  - name: Check if apt mirror directory is present
+    stat: path={{ bootstrap_apt_mirror_dir }}
+    register: apt_mirror_stat
+
+  - name: Check if apt mirror is a mountpoint (VirtualBox shared folder)
+    command: mountpoint {{ bootstrap_apt_mirror_dir }}
+    register: apt_mirror_is_mountpoint
+    ignore_errors: true
+
+  - name: Create apt mirror directory
+    file: path={{ item }} state=directory owner=operations group=operators mode=0775
+    with_items:
+      - "{{ bootstrap_apt_mirror_dir }}"
+    when: not apt_mirror_stat.stat.exists or apt_mirror_is_mountpoint.rc != 0

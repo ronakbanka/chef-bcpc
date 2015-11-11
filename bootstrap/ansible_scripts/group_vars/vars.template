@@ -48,10 +48,21 @@ controlnode_files_dir: /set/to/a/real/path
 # (this is passed to rsync with an / appended to the end)
 controlnode_apt_mirror_dir: /set/to/a/real/path
 
+# invoke bootstrap/shared/shared_prereqs.sh to update file cache
+# (disable if you do not have Internet access)
+update_bcpc_local_cache: true
+
 # set this variable here for all clusters or in group_vars for an
 # individual cluster to seek out prebuilt binaries instead of building
 # on the bootstrap node
 use_prebuilt_binaries: false
+
+# when doing local builds, setting this to true will mount the apt mirror
+# via VirtualBox shared folders rather than rsyncing it
+# (only has an effect if bootstrap node's hardware type is Virtual)
+# NOTE: if you already synced and then turn this on, it will not remove the
+# existing mirrored files (just mounts over it)
+apt_mirror_via_vboxsf: false
 
 # lists of users to add or remove from the bootstrap node
 # will be skipped if not defined

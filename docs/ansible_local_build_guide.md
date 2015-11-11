@@ -44,6 +44,8 @@ Creating VMs
 
 Installing the OS on the bootstrap node
 ---
+***NOTE: this process is somewhat involved and annoying. It will be replaced with a Packer image that incorporates everything automatically in the near future.***
+
 * Attach the ISO to the DVD drive of the **bcpc-bootstrap** node.
 * Boot the bootstrap node and install the operating system.
 * Select **eth0** as the primary network interface (additional interfaces will be configured manually after installation).
@@ -53,7 +55,14 @@ Installing the OS on the bootstrap node
 * Enter **bcpc-bootstrap** as the hostname.
 * Create an account named **ubuntu** (password can be whatever you like).
 * Partition `/dev/sda` using the **Guided - use entire disk** method. The other disks do not need to be partitioned or formatted at this time.
-* Select only **OpenSSH server** when asked to make a software selection.
+* Software selection:
+  * Select **OpenSSH server**.
+  * **If you wish to mount the apt mirror via VirtualBox shared folders**, you must also do **Manual package selection**:
+    * Check **Manual package selection** and continue.
+    * When **aptitude** launches, press the `/` key and enter `build-essential`, then press Return.
+    * Press the `+` key to add the **build-essential** package to the list of packages to be installed (the text will change to green).
+    * Press the `G` key twice to begin installing packages from Aptitude. (Some packages will fail the configuration step, but this is okay).
+    * After package installation is complete, press Return, then quit Aptitude with the `Q` key.
 * GRUB can go in the MBR.
 
 Manually configuring bootstrap node network
