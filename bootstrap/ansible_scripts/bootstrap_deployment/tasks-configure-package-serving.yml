@@ -2,11 +2,13 @@
   # leave / on the end of src path so rsync doesn't put the mirror dir inside the dest dir!
   - name: Perform synchronization of local apt mirror (can take a long while)
     synchronize: src={{ controlnode_apt_mirror_dir }}/ dest={{ bootstrap_apt_mirror_dir }}
+    become: no
     tags:
       - synchronize
 
   - name: Perform synchronization of local bootstrap files
     synchronize: src={{ controlnode_files_dir }}/ dest={{ bootstrap_files_dir }}/
+    become: no
     tags:
       - synchronize
 
