@@ -2,13 +2,13 @@
 # without prompting multiple times for environment verification
 ---
 - name: Perform synchronization of Git staging
-  synchronize: src={{ controlnode_git_staging_dir }}/ dest={{ bootstrap_git_staging_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes
+  synchronize: src={{ controlnode_git_staging_dir }}/ dest={{ bootstrap_git_staging_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes rsync_path="sudo rsync"
   become: no
   tags:
     - synchronize
 
 - name: Perform synchronization of local bootstrap files
-  synchronize: src={{ controlnode_files_dir }}/ dest={{ bootstrap_files_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes
+  synchronize: src={{ controlnode_files_dir }}/ dest={{ bootstrap_files_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes rsync_path="sudo rsync"
   become: no
   tags:
     - synchronize
@@ -42,7 +42,7 @@
   when: chef_bcpc_deploy_from_dir is not defined
 
 - name: Synchronize chef-bcpc deployment directory contents (chef_bcpc_deploy_from_dir is defined)
-  synchronize: src={{ chef_bcpc_deploy_from_dir }}/ dest={{ bootstrap_deployed_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes
+  synchronize: src={{ chef_bcpc_deploy_from_dir }}/ dest={{ bootstrap_deployed_dir }}/ archive=no recursive=yes links=yes perms=yes times=yes rsync_path="sudo rsync"
   when: chef_bcpc_deploy_from_dir is defined
 
 - name: Decompress chef-bcpc-prop to temporary location
