@@ -75,6 +75,7 @@ iptables-restore <<EOH
 ## heat-api 8004
 ## heat-api-cfn 8000
 ## ceilometer-api 8777
+## neutron 9696
 -A INPUT -i <%=@node["bcpc"]["management"]["interface"]%> -d <%=@node["bcpc"]["management"]["vip"]%> -p tcp --match multiport --dports <%= @node['bcpc']['management']['firewall_tcp_ports'].join(',') %> -j ACCEPT
 ## powerdns 53
 -A INPUT -i <%=@node["bcpc"]["management"]["interface"]%> -d <%=@node["bcpc"]["management"]["vip"]%> -p udp --dport 53 -j ACCEPT

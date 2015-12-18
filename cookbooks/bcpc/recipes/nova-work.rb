@@ -23,7 +23,12 @@ package "nova-compute-#{node['bcpc']['virt_type']}" do
     action :upgrade
 end
 
-%w{nova-api nova-network nova-compute nova-novncproxy}.each do |pkg|
+nova_service_list = %w{nova-api nova-compute nova-novncproxy}
+unless node['bcpc']['enabled']['neutron']
+  nova_service_list += ['nova-network']
+end
+
+nova_service_list.each do |pkg|
     package pkg do
         action :upgrade
     end
@@ -39,37 +44,39 @@ service "nova-api" do
     restart_command "service nova-api restart; sleep 5"
 end
 
-#  _   _  ____ _  __   __  ____   _  _____ ____ _   _
-# | | | |/ ___| | \ \ / / |  _ \ / \|_   _/ ___| | | |
-# | | | | |  _| |  \ V /  | |_) / _ \ | || |   | |_| |
-# | |_| | |_| | |___| |   |  __/ ___ \| || |___|  _  |
-#  \___/ \____|_____|_|   |_| /_/   \_\_| \____|_| |_|
-# this patch resolves OpenStack issue #1456321 and BCPC issue #573 -
-# fixes DHCP server assignment so that each fixed IP subnet gets its gateway
-# address as its DHCP server by default instead of all subnets getting the
-# gateway of the lowest subnet
-#
-# can be removed for 2015.1.1 - only applies to 2015.1.0
-cookbook_file "/tmp/nova-network-dhcp-server.patch" do
-    source "nova-network-dhcp-server.patch"
-    owner "root"
-    mode 00644
-end
+unless node['bcpc']['enabled']['neutron']
+  #  _   _  ____ _  __   __  ____   _  _____ ____ _   _
+  # | | | |/ ___| | \ \ / / |  _ \ / \|_   _/ ___| | | |
+  # | | | | |  _| |  \ V /  | |_) / _ \ | || |   | |_| |
+  # | |_| | |_| | |___| |   |  __/ ___ \| || |___|  _  |
+  #  \___/ \____|_____|_|   |_| /_/   \_\_| \____|_| |_|
+  # this patch resolves OpenStack issue #1456321 and BCPC issue #573 -
+  # fixes DHCP server assignment so that each fixed IP subnet gets its gateway
+  # address as its DHCP server by default instead of all subnets getting the
+  # gateway of the lowest subnet
+  #
+  # can be removed for 2015.1.1 - only applies to 2015.1.0
+  cookbook_file "/tmp/nova-network-dhcp-server.patch" do
+      source "nova-network-dhcp-server.patch"
+      owner "root"
+      mode 00644
+  end
 
-bash "patch-for-nova-network-dhcp-server-2015.1.0" do
-    user "root"
-    code <<-EOH
-       cd /usr/lib/python2.7/dist-packages
-       patch -p1 < /tmp/nova-network-dhcp-server.patch
-       rv=$?
-       if [ $rv -ne 0 ]; then
-         echo "Error applying patch ($rv) - aborting!"
-         exit $rv
-       fi
-       cp /tmp/nova-network-dhcp-server.patch .
-    EOH
-    only_if "shasum /usr/lib/python2.7/dist-packages/nova/network/manager.py | grep -q '^1da5cc12bc28f97e15e5f0e152d37b548766ee04'"
-    notifies :restart, "service[nova-api]", :immediately
+  bash "patch-for-nova-network-dhcp-server-2015.1.0" do
+      user "root"
+      code <<-EOH
+         cd /usr/lib/python2.7/dist-packages
+         patch -p1 < /tmp/nova-network-dhcp-server.patch
+         rv=$?
+         if [ $rv -ne 0 ]; then
+           echo "Error applying patch ($rv) - aborting!"
+           exit $rv
+         fi
+         cp /tmp/nova-network-dhcp-server.patch .
+      EOH
+      only_if "shasum /usr/lib/python2.7/dist-packages/nova/network/manager.py | grep -q '^1da5cc12bc28f97e15e5f0e152d37b548766ee04'"
+      notifies :restart, "service[nova-api]", :immediately
+  end
 end
 
 # backport of a patch to fix OpenStack issue #1484738 and BCPC issue #826
@@ -284,28 +291,30 @@ bash "patch-for-ip-hostnames-metadata" do
     notifies :restart, "service[nova-api]", :immediately
 end
 
-cookbook_file "/tmp/nova_network_linux_net.patch" do
-    source "nova_network_linux_net.patch"
-    owner "root"
-    mode 0644
-end
+unless node['bcpc']['enabled']['neutron']
+  cookbook_file "/tmp/nova_network_linux_net.patch" do
+      source "nova_network_linux_net.patch"
+      owner "root"
+      mode 0644
+  end
 
-bash "patch-for-ip-hostnames-networking" do
-    user "root"
-    code <<-EOH
-        cd /usr/lib/python2.7/dist-packages/
-        cp nova/network/linux_net.py nova/network/linux_net.py.prepatch
-        patch -p1 < /tmp/nova_network_linux_net.patch
-        rv=$?
-        if [ $rv -ne 0 ]; then
-          echo "Error applying patch ($rv) - aborting!"
-          exit $rv
-        fi
-        cp /tmp/nova_network_linux_net.patch .
-    EOH
-    not_if "grep -q 'THIS FILE PATCHED BY BCPC' /usr/lib/python2.7/dist-packages/nova/network/linux_net.py"
-    notifies :restart, "service[nova-compute]", :immediately
-    notifies :restart, "service[nova-network]", :immediately
+  bash "patch-for-ip-hostnames-networking" do
+      user "root"
+      code <<-EOH
+          cd /usr/lib/python2.7/dist-packages/
+          cp nova/network/linux_net.py nova/network/linux_net.py.prepatch
+          patch -p1 < /tmp/nova_network_linux_net.patch
+          rv=$?
+          if [ $rv -ne 0 ]; then
+            echo "Error applying patch ($rv) - aborting!"
+            exit $rv
+          fi
+          cp /tmp/nova_network_linux_net.patch .
+      EOH
+      not_if "grep -q 'THIS FILE PATCHED BY BCPC' /usr/lib/python2.7/dist-packages/nova/network/linux_net.py"
+      notifies :restart, "service[nova-compute]", :immediately
+      notifies :restart, "service[nova-network]", :immediately
+  end
 end
 
 # this patch patches Nova to work correctly if you attempt to boot an instance from

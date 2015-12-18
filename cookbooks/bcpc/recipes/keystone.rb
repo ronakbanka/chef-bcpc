@@ -329,6 +329,20 @@ ruby_block "keystone-create-image-service" do
         openstack service list -f json | jq '.[] | .Type==\"image\"' | grep '^true$';" }
 end
 
+ruby_block "keystone-create-network-service" do
+  block do
+  %x[
+        export OS_TOKEN="#{get_config('keystone-admin-token')}";
+        export OS_URL="#{node['bcpc']['protocol']['keystone']}://openstack.#{node['bcpc']['cluster_domain']}:35357/v2.0/";
+        openstack service create --name 'Networking Service' --description 'OpenStack Networking Service' network
+  ]
+  end
+  not_if { system "
+        export OS_TOKEN=\"#{get_config('keystone-admin-token')}\";
+        export OS_URL=\"#{node['bcpc']['protocol']['keystone']}://openstack.#{node['bcpc']['cluster_domain']}:35357/v2.0/\";
+        openstack service list -f json | jq '.[] | .Type==\"network\"' | grep '^true$';" }
+end
+
 ruby_block "keystone-create-identity-endpoint" do
   block do
   %x[
@@ -422,6 +436,25 @@ ruby_block "keystone-create-image-endpoint" do
         export OS_TOKEN=\"#{get_config('keystone-admin-token')}\";
         export OS_URL=\"#{node['bcpc']['protocol']['keystone']}://openstack.#{node['bcpc']['cluster_domain']}:35357/v2.0/\";
         openstack endpoint list -f json | jq '.[] | .[\"Service Type\"]==\"image\"' | grep '^true$';" }
+end
+
+ruby_block "keystone-create-network-endpoint" do
+  block do
+  %x[
+        export OS_TOKEN="#{get_config('keystone-admin-token')}";
+        export OS_URL="#{node['bcpc']['protocol']['keystone']}://openstack.#{node['bcpc']['cluster_domain']}:35357/v2.0/";
+        openstack endpoint create \
+            --region '#{node['bcpc']['region_name']}' \
+            --publicurl '#{node['bcpc']['protocol']['neutron']}://openstack.#{node['bcpc']['cluster_domain']}:9696/' \
+            --adminurl '#{node['bcpc']['protocol']['neutron']}://openstack.#{node['bcpc']['cluster_domain']}:9696/' \
+            --internalurl '#{node['bcpc']['protocol']['neutron']}://openstack.#{node['bcpc']['cluster_domain']}:9696/' \
+            network;
+  ]
+  end
+  not_if { system "
+        export OS_TOKEN=\"#{get_config('keystone-admin-token')}\";
+        export OS_URL=\"#{node['bcpc']['protocol']['keystone']}://openstack.#{node['bcpc']['cluster_domain']}:35357/v2.0/\";
+        openstack endpoint list -f json | jq '.[] | .[\"Service Type\"]==\"network\"' | grep '^true$';" }
 end
 
 ruby_block "keystone-create-ec2-endpoint" do

@@ -82,6 +82,8 @@ default['bcpc']['enabled']['secure_fixed_networks'] = true
 default['bcpc']['enabled']['swap'] = true
 # Toggle to enable/disable Heat (OpenStack Cloud Formation)
 default['bcpc']['enabled']['heat'] = false
+# Toggle to switch between Neutron and Nova networking
+default['bcpc']['enabled']['neutron'] = false
 
 # If radosgw_cache is enabled, default to 20MB max file size
 default['bcpc']['radosgw']['cache_max_file_size'] = 20000000
@@ -177,7 +179,7 @@ default['bcpc']['management']['interface-parent'] = nil
 # list of TCP ports that should be open on the management interface
 # (generally stuff served via HAProxy)
 default['bcpc']['management']['firewall_tcp_ports'] = [
-  80,443,8088,7480,5000,35357,9292,8776,8773,8774,8004,8000,8777
+  80,443,8088,7480,5000,35357,9292,8776,8773,8774,8004,8000,8777,9696
 ]
 
 default['bcpc']['metadata']['ip'] = "169.254.169.254"
@@ -260,6 +262,7 @@ default['bcpc']['dbname']['cinder'] = "cinder"
 default['bcpc']['dbname']['glance'] = "glance"
 default['bcpc']['dbname']['horizon'] = "horizon"
 default['bcpc']['dbname']['keystone'] = "keystone"
+default['bcpc']['dbname']['neutron'] = "neutron"
 default['bcpc']['dbname']['heat'] = "heat"
 default['bcpc']['dbname']['ceilometer'] = "ceilometer"
 default['bcpc']['dbname']['graphite'] = "graphite"
@@ -290,6 +293,7 @@ default['bcpc']['protocol']['keystone'] = "https"
 default['bcpc']['protocol']['glance'] = "https"
 default['bcpc']['protocol']['nova'] = "https"
 default['bcpc']['protocol']['cinder'] = "https"
+default['bcpc']['protocol']['neutron'] = "https"
 default['bcpc']['protocol']['heat'] = "https"
 
 
@@ -324,7 +328,7 @@ default['bcpc']['keystone']['verbose'] = false
 # before failing (configures timeout on the wait-for-keystone-to-be-operational
 # spinlock guard).
 default['bcpc']['keystone']['wait_for_keystone_timeout'] = 120
-# Set the number of Keystone WSGI processes and threads to use by default on the 
+# Set the number of Keystone WSGI processes and threads to use by default on the
 # public API (experimentally threads > 1 may cause problems with the service
 # catalog, for now we recommend scaling only in the processes dimension)
 default['bcpc']['keystone']['wsgi']['processes'] = 5

@@ -27,59 +27,60 @@ bash "wait-for-nova-to-become-operational" do
   timeout 30
 end
 
+unless node['bcpc']['enabled']['neutron']
+  bash "nova-configure-default-icmp-secgroup-rule" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova secgroup-add-default-rule icmp -1 -1 0.0.0.0/0
+      EOH
+      not_if ". /root/adminrc; nova secgroup-list-default-rules | grep icmp"
+  end
 
-bash "nova-configure-default-icmp-secgroup-rule" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova secgroup-add-default-rule icmp -1 -1 0.0.0.0/0
-    EOH
-    not_if ". /root/adminrc; nova secgroup-list-default-rules | grep icmp"
-end
+  bash "nova-configure-default-ssh-secgroup-rule" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova secgroup-add-default-rule tcp 22 22 0.0.0.0/0
+      EOH
+      not_if ". /root/adminrc; nova secgroup-list-default-rules | grep tcp | grep 22"
+  end
 
-bash "nova-configure-default-ssh-secgroup-rule" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova secgroup-add-default-rule tcp 22 22 0.0.0.0/0
-    EOH
-    not_if ". /root/adminrc; nova secgroup-list-default-rules | grep tcp | grep 22"
-end
+  # AdminTenant will already exist, so the above default rules will not
+  # have been loaded into that tenancy, so replicate them explicitly
+  bash "nova-apply-default-icmp-secgroup-rule" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
+      EOH
+      not_if ". /root/adminrc; nova secgroup-list-rules default | grep icmp"
+  end
 
-# AdminTenant will already exist, so the above default rules will not
-# have been loaded into that tenancy, so replicate them explicitly
-bash "nova-apply-default-icmp-secgroup-rule" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
-    EOH
-    not_if ". /root/adminrc; nova secgroup-list-rules default | grep icmp"
-end
+  bash "nova-apply-default-ssh-secgroup-rule" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova secgroup-add-rule default tcp  22 22 0.0.0.0/0
+      EOH
+      not_if ". /root/adminrc; nova secgroup-list-rules default | grep tcp | grep 22"
+  end
 
-bash "nova-apply-default-ssh-secgroup-rule" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova secgroup-add-rule default tcp  22 22 0.0.0.0/0
-    EOH
-    not_if ". /root/adminrc; nova secgroup-list-rules default | grep tcp | grep 22"
-end
+  bash "nova-floating-add" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova-manage floating create --ip_range=#{node['bcpc']['floating']['available_subnet']} --pool #{node['bcpc']['region_name']}
+      EOH
+      only_if ". /root/adminrc; nova-manage floating list | grep \"No floating IP addresses have been defined\""
+  end
 
-bash "nova-floating-add" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova-manage floating create --ip_range=#{node['bcpc']['floating']['available_subnet']} --pool #{node['bcpc']['region_name']}
-    EOH
-    only_if ". /root/adminrc; nova-manage floating list | grep \"No floating IP addresses have been defined\""
-end
-
-bash "nova-fixed-add" do
-    user "root"
-    code <<-EOH
-        . /root/adminrc
-        nova-manage network create --label fixed --fixed_range_v4=#{node['bcpc']['fixed']['cidr']} --num_networks=#{node['bcpc']['fixed']['num_networks']} --multi_host=T --network_size=#{node['bcpc']['fixed']['network_size']} --vlan_start=#{node['bcpc']['fixed']['vlan_start']} --bridge_interface=#{node['bcpc']['fixed']['vlan_interface']}
-    EOH
-    only_if ". /root/adminrc; nova-manage network list | grep \"No networks found\""
+  bash "nova-fixed-add" do
+      user "root"
+      code <<-EOH
+          . /root/adminrc
+          nova-manage network create --label fixed --fixed_range_v4=#{node['bcpc']['fixed']['cidr']} --num_networks=#{node['bcpc']['fixed']['num_networks']} --multi_host=T --network_size=#{node['bcpc']['fixed']['network_size']} --vlan_start=#{node['bcpc']['fixed']['vlan_start']} --bridge_interface=#{node['bcpc']['fixed']['vlan_interface']}
+      EOH
+      only_if ". /root/adminrc; nova-manage network list | grep \"No networks found\""
+  end
 end

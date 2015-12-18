@@ -11,6 +11,7 @@
       "recipe[bcpc::networking-route-test]",
       "recipe[bcpc::ceph-work]",
       "recipe[bcpc::ceph-osd]",
+      "recipe[bcpc::neutron-work]",
       "recipe[bcpc::nova-work]",
       "role[BCPC-Rgwnode]",
       "recipe[bcpc::diamond]",
@@ -23,6 +24,3 @@
     "description": "Run list for a general compute function. Building block, not designed as an applied role.",
     "chef_type": "role"
 }
-
-
-

@@ -101,6 +101,16 @@ listen cinder-api
   <%= "server #{server['hostname']} #{server['bcpc']['management']['ip']}:8776 check inter 5s rise 1 fall 1" %>
 <% end -%>
 
+listen neutron-api
+  bind <%=node['bcpc']['management']['vip']%>:9696 <%= (node['bcpc']['protocol']['neutron'] == 'https') ? "ssl crt /etc/haproxy/haproxy.pem" : "" %>
+  balance source
+  option tcplog
+  option httpchk GET /
+  http-check expect status 200
+<% @servers.each do |server| -%>
+  <%= "server #{server['hostname']} #{server['bcpc']['management']['ip']}:9696 check inter 5s rise 1 fall 1" %>
+<% end -%>
+
 listen nova-ec2
   bind <%=node['bcpc']['management']['vip']%>:8773 <%= (node['bcpc']['protocol']['nova'] == 'https') ? "ssl crt /etc/haproxy/haproxy.pem" : "" %>
   balance source
