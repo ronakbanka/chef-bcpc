@@ -70,3 +70,8 @@ export MONITORING_NODES=0
 # shared folders inside each VM.
 export REPO_MOUNT_POINT=/chef-bcpc-host
 export FILECACHE_MOUNT_POINT=/chef-bcpc-files
+
+# Specify the desired chef versions
+# Leave empty for sensible defaults in shared_prereqs.sh
+export CHEF_CLIENT_DEB=
+export CHEF_SERVER_DEB=

@@ -23,13 +23,26 @@ KNIFE=/opt/opscode/embedded/bin/knife
 
 # install and configure Chef Server 12 and Chef 12 client on the bootstrap node
 # move nginx insecure to 4000/TCP is so that Cobbler can run on the regular 80/TCP
-do_on_node bootstrap "sudo dpkg -i \$(find $FILECACHE_MOUNT_POINT/ -name chef-server\*deb -not -name \*downloaded | tail -1) \
+if [[ -n "$CHEF_SERVER_DEB" ]]; then
+    debpath="$FILECACHE_MOUNT_POINT/$CHEF_SERVER_DEB"
+    CHEF_SERVER_INSTALL_CMD="sudo dpkg -i $debpath"
+else
+    CHEF_SERVER_INSTALL_CMD="sudo dpkg -i \$(find $FILECACHE_MOUNT_POINT/ -name chef-server\*deb -not -name \*downloaded | tail -1)"
+fi
+if [[ -n "$CHEF_CLIENT_DEB" ]]; then
+    debpath="$FILECACHE_MOUNT_POINT/$CHEF_CLIENT_DEB"
+    CHEF_CLIENT_INSTALL_CMD="sudo dpkg -i $debpath"
+else
+    CHEF_CLIENT_INSTALL_CMD="sudo dpkg -i \$(find $FILECACHE_MOUNT_POINT/ -name chef_\*deb -not -name \*downloaded | tail -1)"
+fi
+unset debpath
+do_on_node bootstrap "$CHEF_SERVER_INSTALL_CMD \
   && sudo sh -c \"echo nginx[\'non_ssl_port\'] = 4000 > /etc/opscode/chef-server.rb\" \
   && sudo chef-server-ctl reconfigure \
   && sudo chef-server-ctl user-create admin admin admin admin@localhost.com welcome --filename /etc/opscode/admin.pem \
   && sudo chef-server-ctl org-create bcpc BCPC --association admin --filename /etc/opscode/bcpc-validator.pem \
   && sudo chmod 0644 /etc/opscode/admin.pem /etc/opscode/bcpc-validator.pem \
-  && sudo dpkg -i \$(find $FILECACHE_MOUNT_POINT/ -name chef_\*deb -not -name \*downloaded | tail -1)"
+  && $CHEF_CLIENT_INSTALL_CMD"
 
 # configure knife on the bootstrap node and perform a knife bootstrap to create the bootstrap node in Chef
 do_on_node bootstrap "mkdir -p \$HOME/.chef && echo -e \"chef_server_url 'https://bcpc-bootstrap.$BCPC_HYPERVISOR_DOMAIN/organizations/bcpc'\\\nvalidation_client_name 'bcpc-validator'\\\nvalidation_key '/etc/opscode/bcpc-validator.pem'\\\nnode_name 'admin'\\\nclient_key '/etc/opscode/admin.pem'\\\nknife['editor'] = 'vim'\\\ncookbook_path [ \\\"#{ENV['HOME']}/chef-bcpc/cookbooks\\\" ]\" > \$HOME/.chef/knife.rb \
@@ -70,7 +83,11 @@ do_on_node bootstrap "$KNIFE cookbook upload -a \
 # install and bootstrap Chef on cluster nodes
 i=1
 for vm in $vms $mon_vms; do
-  do_on_node $vm "sudo dpkg -i \$(find $FILECACHE_MOUNT_POINT/ -name chef_\*deb -not -name \*downloaded | tail -1)"
+  # Try to install a specific version, or just the latest
+  if [[ -z "$CHEF_CLIENT_DEB" ]]; then
+    echo "Installing latest chef-client found in $vm:$FILECACHE_MOUNT_POINT"
+  fi
+  do_on_node bootstrap "$CHEF_CLIENT_INSTALL_CMD"
   do_on_node bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.100.1${i}"
   i=`expr $i + 1`
 done
